@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>🔐 Đoán mật khẩu</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <link rel="stylesheet" href="css/guess.css" />
+  </head>
+  <body>
+    <nav class="navbar p-3 d-flex justify-content-center sticky-top">
+      <div class="nav-item"><a href="index.html">Trang chủ</a></div>
+      <div class="nav-item"><a href="guess.html">Đoán</a></div>
+      <div class="nav-item"><a href="leaderboard.html">Bảng xếp hạng</a></div>
+    </nav>
+
+    <section class="container mt-5">
+      <div class="guess-box">
+        <h2 class="text-primary mb-4">
+          🔐 Hãy thử đoán mật khẩu bí mật hôm nay!
+        </h2>
+        <p class="text-muted">
+          Bạn có thể thử bao nhiêu lần tùy thích trong ngày cho đến khi có người
+          đoán đúng đầu tiên!
+        </p>
+        <input
+          type="text"
+          id="passwordInput"
+          class="form-control mb-3"
+          placeholder="Nhập mật khẩu của bạn..."
+        />
+
+        <div class="captcha-box">
+          <p>
+            <strong>🤖 Mã kiểm tra:</strong> Gõ lại từ:
+            <span id="captchaWord">chocolate</span>
+          </p>
+          <input
+            type="text"
+            id="captchaInput"
+            class="form-control"
+            placeholder="Nhập mã kiểm tra"
+          />
+        </div>
+
+        <button class="btn-submit mt-4" onclick="submitGuess()">
+          🚀 Gửi đáp án
+        </button>
+        <p id="resultMsg" class="mt-3"></p>
+      </div>
+    </section>
+
+    <!-- Modal nhập tên người chiến thắng -->
+    <div class="modal fade" id="winnerModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">🎉 Bạn đã đoán đúng!</h5>
+          </div>
+          <div class="modal-body">
+            <label for="winnerName">Nhập tên để ghi danh bảng vàng:</label>
+            <input
+              type="text"
+              id="winnerName"
+              class="form-control"
+              placeholder="Tên của bạn"
+            />
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="submitWinnerName()"
+            >
+              Xác nhận
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>• 2025 © Đội ngũ Guess It • 😄</p>
+      <!-- Modal sai mật khẩu -->
+      <div class="modal fade" id="failModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title">❌ Sai mất rồi!</h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div class="modal-body text-center">
+              Mật khẩu bạn vừa nhập chưa chính xác đâu...<br />
+              Nhưng đừng lo! Bạn vẫn có thể thử lại tiếp nha 💪
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const captchaText = "chocolate";
+      let stompClient = null;
+
+      async function submitGuess() {
+        const pass = document.getElementById("passwordInput").value.trim();
+        const captcha = document
+          .getElementById("captchaInput")
+          .value.trim()
+          .toLowerCase();
+        const resultMsg = document.getElementById("resultMsg");
+
+        if (!pass) {
+          resultMsg.textContent = "⚠️ Bạn chưa nhập mật khẩu!";
+          return;
+        }
+        if (captcha !== captchaText) {
+          resultMsg.textContent =
+            "🚫 Mã kiểm tra sai rồi! Gõ lại từ: chocolate";
+          return;
+        }
+
+        resultMsg.textContent = "⏳ Đang kiểm tra...";
+
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
+        try {
+          const response = await fetch("http://localhost:8080/guess", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Basic " + btoa("user_guess:cantfindthepassword"),
+            },
+            body: JSON.stringify({ password: pass }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.data === true) {
+            const modal = new bootstrap.Modal(
+              document.getElementById("winnerModal")
+            );
+            modal.show();
+            resultMsg.textContent = "";
+          } else {
+            const failModal = new bootstrap.Modal(
+              document.getElementById("failModal")
+            );
+            failModal.show();
+            resultMsg.textContent = "";
+          }
+        } catch (err) {
+          resultMsg.innerHTML = "⚠️ Có lỗi xảy ra khi kết nối với máy chủ.";
+          console.error(err);
+        }
+      }
+
+      function submitWinnerName() {
+        const name = document.getElementById("winnerName").value.trim();
+        if (!name) {
+          alert("⚠️ Vui lòng nhập tên để ghi danh!");
+          return;
+        }
+
+        const socket = new SockJS("http://localhost:8080/leaderboard");
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function () {
+          stompClient.send(
+            "/leaderboard/correct-user",
+            {},
+            JSON.stringify({ nameUser: name })
+          );
+        });
+
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("winnerModal")
+        );
+        modal.hide();
+        document.getElementById("resultMsg").textContent =
+          "🏆 Tên của bạn đã được ghi danh vào bảng xếp hạng!";
+      }
+    </script>
+  </body>
+</html>
