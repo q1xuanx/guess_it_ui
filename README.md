@@ -11,7 +11,7 @@
 - **PostgreSQL**: persistent storage for leaderboard and user data
 - **WebSocket (STOMP + SockJS)**: real-time updates to the leaderboard
 - **Basic Authentication**: secure password guessing and user registration
-
+- Repository of api: [Guess_It](https://github.com/q1xuanx/guess_it)
 ### 🌐 Front-End
 - **HTML/CSS/JavaScript** (Vanilla)
 - **Bootstrap 5**: layout, modals, responsive UI
