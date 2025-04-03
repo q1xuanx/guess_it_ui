@@ -32,8 +32,11 @@
           🔐 Hãy thử đoán mật khẩu bí mật hôm nay!
         </h2>
         <p class="text-muted">
-          Bạn có thể thử bao nhiêu lần tùy thích trong ngày cho đến khi có người
-          đoán đúng đầu tiên!
+          * Bạn có thể thử bao nhiêu lần tùy thích trong ngày cho đến khi có người đoán đúng đầu tiên!<br>
+          * Hãy kiểm tra xem những gì đã bị thử để tránh lặp lại: 
+          <a class="btn mt-1 d-inline-block" href="manage.html">
+            Danh sách mật khẩu đã đoán
+          </a>
         </p>
         <input
           type="text"
@@ -45,7 +48,7 @@
         <div class="captcha-box">
           <p>
             <strong>🤖 Mã kiểm tra:</strong> Gõ lại từ:
-            <span id="captchaWord">chocolate</span>
+            <span id="captchaWord">Gabimaru</span>
           </p>
           <input
             type="text"
@@ -130,89 +133,7 @@
         </div>
       </div>
     </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-      const captchaText = "chocolate";
-      let stompClient = null;
-
-      async function submitGuess() {
-        const pass = document.getElementById("passwordInput").value.trim();
-        const captcha = document
-          .getElementById("captchaInput")
-          .value.trim()
-          .toLowerCase();
-        const resultMsg = document.getElementById("resultMsg");
-
-        if (!pass) {
-          resultMsg.textContent = "⚠️ Bạn chưa nhập mật khẩu!";
-          return;
-        }
-        if (captcha !== captchaText) {
-          resultMsg.textContent =
-            "🚫 Mã kiểm tra sai rồi! Gõ lại từ: chocolate";
-          return;
-        }
-
-        resultMsg.textContent = "⏳ Đang kiểm tra...";
-
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        try {
-          const response = await fetch("http://localhost:8080/guess", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Basic " + btoa("user_guess:cantfindthepassword"),
-            },
-            body: JSON.stringify({ password: pass }),
-          });
-
-          const data = await response.json();
-
-          if (response.ok && data.data === true) {
-            const modal = new bootstrap.Modal(
-              document.getElementById("winnerModal")
-            );
-            modal.show();
-            resultMsg.textContent = "";
-          } else {
-            const failModal = new bootstrap.Modal(
-              document.getElementById("failModal")
-            );
-            failModal.show();
-            resultMsg.textContent = "";
-          }
-        } catch (err) {
-          resultMsg.innerHTML = "⚠️ Có lỗi xảy ra khi kết nối với máy chủ.";
-          console.error(err);
-        }
-      }
-
-      function submitWinnerName() {
-        const name = document.getElementById("winnerName").value.trim();
-        if (!name) {
-          alert("⚠️ Vui lòng nhập tên để ghi danh!");
-          return;
-        }
-
-        const socket = new SockJS("http://localhost:8080/leaderboard");
-        stompClient = Stomp.over(socket);
-        stompClient.connect({}, function () {
-          stompClient.send(
-            "/leaderboard/correct-user",
-            {},
-            JSON.stringify({ nameUser: name })
-          );
-        });
-
-        const modal = bootstrap.Modal.getInstance(
-          document.getElementById("winnerModal")
-        );
-        modal.hide();
-        document.getElementById("resultMsg").textContent =
-          "🏆 Tên của bạn đã được ghi danh vào bảng xếp hạng!";
-      }
-    </script>
+    <script src="js/guess.js"></script>
   </body>
 </html>
